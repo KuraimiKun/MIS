@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ customer.name }} - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}Customer Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Customer Info -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Customer Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-person-fill text-primary" style="font-size: 40px;"></i>
+                </div>
+                <h4>{{ customer.name }}</h4>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-telephone"></i> {{ customer.phone }}
+                </p>
+                {% if customer.email %}
+                <p class="text-muted">
+                    <i class="bi bi-envelope"></i> {{ customer.email }}
+                </p>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="mb-0">{{ bookings.count }}</h3>
+                        <small class="text-muted">Total Bookings</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="mb-0 text-success">Rp {{ total_spent|intcomma }}</h3>
+                        <small class="text-muted">Total Spent</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <small class="text-muted">
+                    Customer since {{ customer.created_at|date:"d M Y" }}
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Booking History -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Booking History</h5>
+                <a href="{% url 'booking_create' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i> New Booking
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Court</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                            <tr>
+                                <td><a href="{% url 'booking_detail' booking.id %}">#{{ booking.id }}</a></td>
+                                <td>
+                                    {{ booking.court.name }}
+                                    <br><small class="text-muted">{{ booking.court.court_type.name }}</small>
+                                </td>
+                                <td>{{ booking.booking_date|date:"d M Y" }}</td>
+                                <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                                <td>Rp {{ booking.total_amount|intcomma }}</td>
+                                <td>
+                                    <span class="badge badge-{{ booking.status }}">
+                                        {{ booking.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No bookings yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Customers
+    </a>
+</div>
+{% endblock %}

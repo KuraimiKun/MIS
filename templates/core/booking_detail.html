@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Booking #{{ booking.id }} - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}Booking Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Booking Information -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check"></i> Booking #{{ booking.id }}
+                    <span class="badge badge-{{ booking.status }} ms-2">{{ booking.get_status_display }}</span>
+                </h5>
+                <div>
+                    <a href="{% url 'print_receipt' booking.id %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                        <i class="bi bi-printer"></i> Print Receipt
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Customer Information</h6>
+                        <p class="mb-1"><strong>{{ booking.customer.name }}</strong></p>
+                        <p class="mb-1"><i class="bi bi-telephone"></i> {{ booking.customer.phone }}</p>
+                        {% if booking.customer.email %}
+                        <p class="mb-1"><i class="bi bi-envelope"></i> {{ booking.customer.email }}</p>
+                        {% endif %}
+                        <a href="{% url 'customer_detail' booking.customer.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                            View Customer History
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Booking Information</h6>
+                        <p class="mb-1"><strong>Court:</strong> {{ booking.court.name }}</p>
+                        <p class="mb-1"><strong>Type:</strong> {{ booking.court.court_type.name }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ booking.booking_date|date:"l, d F Y" }}</p>
+                        <p class="mb-1"><strong>Time:</strong> {{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }} ({{ booking.duration_hours }} hours)</p>
+                        <p class="mb-1"><strong>Source:</strong> 
+                            <i class="bi bi-{% if booking.booking_source == 'whatsapp' %}whatsapp text-success{% else %}person-walking{% endif %}"></i>
+                            {{ booking.get_booking_source_display }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Equipment Rental -->
+                {% if booking.equipment_rentals.exists %}
+                <h6 class="text-muted mb-3">Equipment Rental</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Equipment</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Subtotal</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eq in booking.equipment_rentals.all %}
+                            <tr>
+                                <td>{{ eq.equipment.name }}</td>
+                                <td>{{ eq.quantity }}</td>
+                                <td>Rp {{ eq.unit_price|intcomma }}</td>
+                                <td>Rp {{ eq.subtotal|intcomma }}</td>
+                                <td>
+                                    {% if eq.returned %}
+                                    <span class="badge bg-success">Returned</span>
+                                    <small class="d-block text-muted">{{ eq.returned_at|date:"d/m/Y H:i" }}</small>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Not Returned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not eq.returned and booking.status == 'active' %}
+                                    <a href="{% url 'return_equipment' booking.id eq.id %}" class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-lg"></i> Mark Returned
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- Penalties -->
+                {% if booking.penalties.exists %}
+                <h6 class="text-muted mb-3">Penalties</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for penalty in booking.penalties.all %}
+                            <tr>
+                                <td><span class="badge bg-danger">{{ penalty.get_penalty_type_display }}</span></td>
+                                <td>{{ penalty.description }}</td>
+                                <td>Rp {{ penalty.amount|intcomma }}</td>
+                                <td>{{ penalty.created_at|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- Notes -->
+                {% if booking.notes %}
+                <h6 class="text-muted mb-3">Notes</h6>
+                <p class="bg-light p-3 rounded">{{ booking.notes }}</p>
+                {% endif %}
+                
+                <hr>
+                
+                <small class="text-muted">
+                    Created by {{ booking.created_by.get_full_name|default:booking.created_by.username }} 
+                    on {{ booking.created_at|date:"d/m/Y H:i" }}
+                </small>
+            </div>
+        </div>
+        
+        <!-- Payment History -->
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment History</h5>
+                {% if booking.remaining_payment > 0 and booking.status != 'cancelled' %}
+                <a href="{% url 'add_payment' booking.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-lg"></i> Add Payment
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Received By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in booking.payments.all %}
+                            <tr>
+                                <td>{{ payment.payment_date|date:"d/m/Y H:i" }}</td>
+                                <td>{{ payment.get_payment_type_display }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td class="text-success">Rp {{ payment.amount|intcomma }}</td>
+                                <td>{{ payment.received_by.get_full_name|default:payment.received_by.username }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No payments recorded</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Price Summary -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-calculator"></i> Price Summary</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td>Court Rental ({{ booking.duration_hours }}h)</td>
+                        <td class="text-end">Rp {{ booking.court_rental_fee|intcomma }}</td>
+                    </tr>
+                    {% if booking.equipment_rental_fee > 0 %}
+                    <tr>
+                        <td>Equipment Rental</td>
+                        <td class="text-end">Rp {{ booking.equipment_rental_fee|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if booking.penalty_fee > 0 %}
+                    <tr>
+                        <td class="text-danger">Penalties</td>
+                        <td class="text-end text-danger">Rp {{ booking.penalty_fee|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-top">
+                        <td><strong>Total</strong></td>
+                        <td class="text-end"><strong>Rp {{ booking.total_amount|intcomma }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Paid</td>
+                        <td class="text-end text-success">Rp {{ booking.down_payment|intcomma }}</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td><strong>Remaining</strong></td>
+                        <td class="text-end">
+                            {% if booking.remaining_payment > 0 %}
+                            <strong class="text-danger">Rp {{ booking.remaining_payment|intcomma }}</strong>
+                            {% else %}
+                            <strong class="text-success">PAID</strong>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <!-- Status Update -->
+                <form method="post" action="{% url 'booking_update_status' booking.id %}" class="mb-3">
+                    {% csrf_token %}
+                    <label class="form-label">Update Status</label>
+                    <select name="status" class="form-select mb-2">
+                        {% for value, label in booking.STATUS_CHOICES %}
+                        <option value="{{ value }}" {% if booking.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-repeat"></i> Update Status
+                    </button>
+                </form>
+                
+                <hr>
+                
+                <!-- Quick Actions -->
+                <div class="d-grid gap-2">
+                    {% if booking.remaining_payment > 0 and booking.status != 'cancelled' %}
+                    <a href="{% url 'add_payment' booking.id %}" class="btn btn-success">
+                        <i class="bi bi-cash"></i> Record Payment
+                    </a>
+                    {% endif %}
+                    
+                    {% if booking.status == 'active' %}
+                    <a href="{% url 'add_penalty' booking.id %}" class="btn btn-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Add Penalty
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'print_receipt' booking.id %}" class="btn btn-outline-secondary" target="_blank">
+                        <i class="bi bi-printer"></i> Print Receipt
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info -->
+        <div class="card">
+            <div class="card-body text-center text-muted">
+                <small>
+                    <i class="bi bi-info-circle"></i> 
+                    Operating Hours: 07:00 - 23:00 WIB
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'booking_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Bookings
+    </a>
+</div>
+{% endblock %}

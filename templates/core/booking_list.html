@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Bookings - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}Bookings{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date</label>
+                <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Court Type</label>
+                <select name="court_type" class="form-select">
+                    <option value="">All Types</option>
+                    {% for ct in court_types %}
+                    <option value="{{ ct.id }}" {% if request.GET.court_type == ct.id|stringformat:"i" %}selected{% endif %}>{{ ct.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Name or phone..." value="{{ request.GET.search }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bookings Table -->
+<div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> All Bookings</h5>
+        <a href="{% url 'booking_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Booking
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Court</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th>Total</th>
+                        <th>Remaining</th>
+                        <th>Status</th>
+                        <th>Source</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                    <tr>
+                        <td><a href="{% url 'booking_detail' booking.id %}">#{{ booking.id }}</a></td>
+                        <td>
+                            <strong>{{ booking.customer.name }}</strong>
+                            <br><small class="text-muted">{{ booking.customer.phone }}</small>
+                        </td>
+                        <td>
+                            {{ booking.court.name }}
+                            <br><small class="text-muted">{{ booking.court.court_type.name }}</small>
+                        </td>
+                        <td>{{ booking.booking_date|date:"d M Y" }}</td>
+                        <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                        <td>{{ booking.duration_hours }} hour(s)</td>
+                        <td>Rp {{ booking.total_amount|intcomma }}</td>
+                        <td>
+                            {% if booking.remaining_payment > 0 %}
+                            <span class="text-danger">Rp {{ booking.remaining_payment|intcomma }}</span>
+                            {% else %}
+                            <span class="text-success">Paid</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ booking.status }}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <i class="bi bi-{% if booking.booking_source == 'whatsapp' %}whatsapp text-success{% else %}person-walking{% endif %}"></i>
+                            {{ booking.get_booking_source_display }}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if booking.status != 'completed' and booking.status != 'cancelled' %}
+                                <a href="{% url 'add_payment' booking.id %}" class="btn btn-outline-success" title="Add Payment">
+                                    <i class="bi bi-cash"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'print_receipt' booking.id %}" class="btn btn-outline-secondary" title="Print Receipt" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted py-4">
+                            <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
+                            <p class="mt-2">No bookings found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Add Penalty - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}Add Penalty{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> 
+                    Add Penalty for Booking #{{ booking.id }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Booking Summary -->
+                <div class="bg-light p-3 rounded mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Customer:</strong> {{ booking.customer.name }}</p>
+                            <p class="mb-1"><strong>Court:</strong> {{ booking.court.name }}</p>
+                            <p class="mb-0"><strong>Date:</strong> {{ booking.booking_date|date:"d M Y" }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="mb-1"><strong>Current Total:</strong> Rp {{ booking.total_amount|intcomma }}</p>
+                            <p class="mb-0"><strong>Current Penalties:</strong> Rp {{ booking.penalty_fee|intcomma }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    Adding a penalty will increase the total booking amount and remaining payment.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Penalty Type</label>
+                        {{ form.penalty_type }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Amount (Rp)</label>
+                        {{ form.amount }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                        <div class="form-text">
+                            Please describe the reason for this penalty (e.g., equipment damage details, late return time, etc.)
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-exclamation-triangle"></i> Add Penalty
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

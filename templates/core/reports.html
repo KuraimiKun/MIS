@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Reports - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">Rp {{ revenue_data.total_revenue|default:0|intcomma }}</h2>
+                <p class="mb-0">Total Revenue</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ revenue_data.total_transactions|default:0 }}</h2>
+                <p class="mb-0">Total Transactions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                {% if revenue_data.total_transactions > 0 %}
+                <h2 class="mb-0">Rp {{ revenue_data.total_revenue|divisibleby:revenue_data.total_transactions|intcomma }}</h2>
+                {% else %}
+                <h2 class="mb-0">Rp 0</h2>
+                {% endif %}
+                <p class="mb-0">Average Transaction</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Monthly Revenue Trend -->
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Monthly Revenue Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Revenue by Payment Method -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> By Payment Method</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    {% for item in revenue_by_method %}
+                    <tr>
+                        <td>
+                            {% if item.payment_method == 'cash' %}
+                            <i class="bi bi-cash text-success"></i>
+                            {% elif item.payment_method == 'transfer' %}
+                            <i class="bi bi-bank text-primary"></i>
+                            {% else %}
+                            <i class="bi bi-qr-code text-info"></i>
+                            {% endif %}
+                            {{ item.payment_method|title }}
+                        </td>
+                        <td class="text-end">Rp {{ item.total|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">No data</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Revenue by Court Type -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Revenue by Court Type</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Court Type</th>
+                                <th class="text-center">Bookings</th>
+                                <th class="text-end">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in court_revenue %}
+                            <tr>
+                                <td>{{ item.court__court_type__name }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">{{ item.count }}</span>
+                                </td>
+                                <td class="text-end">Rp {{ item.total|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No data</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Equipment Revenue -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Equipment Rental Revenue</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Equipment</th>
+                                <th class="text-center">Qty Rented</th>
+                                <th class="text-end">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in equipment_revenue %}
+                            <tr>
+                                <td>{{ item.equipment__name }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ item.quantity }}</span>
+                                </td>
+                                <td class="text-end">Rp {{ item.total|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No equipment rentals</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-muted text-center">
+    <small>
+        Report generated on {% now "d F Y H:i" %} WIB | 
+        Period: {{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }}
+    </small>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Monthly Revenue Chart
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ monthly_labels|safe }},
+            datasets: [{
+                label: 'Revenue (Rp)',
+                data: {{ monthly_data|safe }},
+                backgroundColor: 'rgba(44, 95, 45, 0.7)',
+                borderColor: '#2c5f2d',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString('id-ID');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

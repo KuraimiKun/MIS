@@ -1,0 +1,307 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ booking.id }} - LOSIK Sports Arena</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .receipt {
+            border: 1px dashed #000;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #000;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 10px;
+            color: #555;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .section {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
+        .item-name {
+            flex: 1;
+        }
+        
+        .item-qty {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .item-price {
+            width: 100px;
+            text-align: right;
+        }
+        
+        .totals {
+            margin-top: 15px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .total-row.grand {
+            font-weight: bold;
+            font-size: 14px;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #000;
+            font-size: 10px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.confirmed {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="header">
+            <h1>LOSIK SPORTS ARENA</h1>
+            <p>Court Rental & Sports Facility</p>
+            <p>Malang City, East Java</p>
+            <p>Open: 07:00 - 23:00 WIB</p>
+        </div>
+        
+        <div class="section">
+            <div class="info-row">
+                <span>Receipt No:</span>
+                <span><strong>#{{ booking.id }}</strong></span>
+            </div>
+            <div class="info-row">
+                <span>Date:</span>
+                <span>{{ booking.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span>Staff:</span>
+                <span>{{ booking.created_by.get_full_name|default:booking.created_by.username }}</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Customer</div>
+            <div class="info-row">
+                <span>Name:</span>
+                <span>{{ booking.customer.name }}</span>
+            </div>
+            <div class="info-row">
+                <span>Phone:</span>
+                <span>{{ booking.customer.phone }}</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Booking Details</div>
+            <div class="info-row">
+                <span>Court:</span>
+                <span>{{ booking.court.name }}</span>
+            </div>
+            <div class="info-row">
+                <span>Type:</span>
+                <span>{{ booking.court.court_type.name }}</span>
+            </div>
+            <div class="info-row">
+                <span>Date:</span>
+                <span>{{ booking.booking_date|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span>Time:</span>
+                <span>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span>Duration:</span>
+                <span>{{ booking.duration_hours }} hour(s)</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Charges</div>
+            <div class="item-row">
+                <span class="item-name">Court Rental ({{ booking.duration_hours }}h x Rp {{ booking.court.court_type.hourly_rate|intcomma }})</span>
+            </div>
+            <div class="item-row">
+                <span></span>
+                <span class="item-price">Rp {{ booking.court_rental_fee|intcomma }}</span>
+            </div>
+            
+            {% if booking.equipment_rentals.exists %}
+            <br>
+            <div class="item-row">
+                <span class="item-name"><strong>Equipment Rental:</strong></span>
+            </div>
+            {% for eq in booking.equipment_rentals.all %}
+            <div class="item-row">
+                <span class="item-name">- {{ eq.equipment.name }}</span>
+                <span class="item-qty">x{{ eq.quantity }}</span>
+                <span class="item-price">Rp {{ eq.subtotal|intcomma }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if booking.penalties.exists %}
+            <br>
+            <div class="item-row">
+                <span class="item-name"><strong>Penalties:</strong></span>
+            </div>
+            {% for penalty in booking.penalties.all %}
+            <div class="item-row">
+                <span class="item-name">- {{ penalty.get_penalty_type_display }}</span>
+                <span class="item-price">Rp {{ penalty.amount|intcomma }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+        
+        <div class="totals">
+            <div class="total-row">
+                <span>Court Rental:</span>
+                <span>Rp {{ booking.court_rental_fee|intcomma }}</span>
+            </div>
+            {% if booking.equipment_rental_fee > 0 %}
+            <div class="total-row">
+                <span>Equipment Rental:</span>
+                <span>Rp {{ booking.equipment_rental_fee|intcomma }}</span>
+            </div>
+            {% endif %}
+            {% if booking.penalty_fee > 0 %}
+            <div class="total-row">
+                <span>Penalties:</span>
+                <span>Rp {{ booking.penalty_fee|intcomma }}</span>
+            </div>
+            {% endif %}
+            <div class="total-row grand">
+                <span>TOTAL:</span>
+                <span>Rp {{ booking.total_amount|intcomma }}</span>
+            </div>
+            <div class="total-row">
+                <span>Paid:</span>
+                <span>Rp {{ booking.down_payment|intcomma }}</span>
+            </div>
+            <div class="total-row">
+                <span>Remaining:</span>
+                <span>Rp {{ booking.remaining_payment|intcomma }}</span>
+            </div>
+        </div>
+        
+        <div class="status {% if booking.status == 'completed' %}completed{% elif booking.status == 'confirmed' %}confirmed{% else %}pending{% endif %}">
+            {{ booking.get_status_display }}
+        </div>
+        
+        {% if booking.payments.exists %}
+        <div class="section">
+            <div class="section-title">Payment History</div>
+            {% for payment in booking.payments.all %}
+            <div class="item-row">
+                <span>{{ payment.payment_date|date:"d/m/Y H:i" }}</span>
+                <span>{{ payment.get_payment_method_display }}</span>
+                <span>Rp {{ payment.amount|intcomma }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>Thank you for choosing LOSIK Sports Arena!</p>
+            <p>See you again!</p>
+            <br>
+            <p>*** This is a computer-generated receipt ***</p>
+        </div>
+    </div>
+    
+    <div class="no-print" style="text-align: center; margin-top: 20px;">
+        <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer;">
+            🖨️ Print Receipt
+        </button>
+        <button onclick="window.close()" style="padding: 10px 30px; font-size: 16px; cursor: pointer; margin-left: 10px;">
+            ✖️ Close
+        </button>
+    </div>
+</body>
+</html>

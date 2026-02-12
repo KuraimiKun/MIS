@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}New Booking - LOSIK Sports Arena{% endblock %}
+
+{% block page_title %}New Booking{% endblock %}
+
+{% block content %}
+<form method="post" id="bookingForm">
+    {% csrf_token %}
+    
+    <div class="row">
+        <!-- Customer Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Search existing customer -->
+                    <div class="mb-3">
+                        <label class="form-label">Search Existing Customer</label>
+                        <input type="text" id="customerSearch" class="form-control" placeholder="Search by name or phone...">
+                        <div id="customerResults" class="list-group mt-2" style="display: none;"></div>
+                    </div>
+                    
+                    <input type="hidden" name="existing_customer" id="existingCustomerId">
+                    
+                    <hr>
+                    <p class="text-muted small">Or enter new customer details:</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        {{ customer_form.name }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Phone <span class="text-danger">*</span></label>
+                        {{ customer_form.phone }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        {{ customer_form.email }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Booking Details -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Booking Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Court <span class="text-danger">*</span></label>
+                        {{ booking_form.court }}
+                        <div id="courtPrice" class="form-text"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date <span class="text-danger">*</span></label>
+                            {{ booking_form.booking_date }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Duration (hours) <span class="text-danger">*</span></label>
+                            {{ booking_form.duration_hours }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Time <span class="text-danger">*</span></label>
+                            {{ booking_form.start_time }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Time <span class="text-danger">*</span></label>
+                            {{ booking_form.end_time }}
+                        </div>
+                    </div>
+                    
+                    <div id="availabilityStatus" class="alert d-none mb-3"></div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Booking Source</label>
+                        {{ booking_form.booking_source }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        {{ booking_form.notes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Equipment Rental -->
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-box-seam"></i> Equipment Rental (Optional)</h5>
+        </div>
+        <div class="card-body">
+            <div id="equipmentContainer">
+                <div class="row equipment-row mb-3">
+                    <div class="col-md-6">
+                        <select name="equipment" class="form-select equipment-select">
+                            <option value="">Select equipment...</option>
+                            {% for eq in equipment_list %}
+                            <option value="{{ eq.id }}" data-price="{{ eq.rental_fee }}">
+                                {{ eq.name }} - Rp {{ eq.rental_fee|intcomma }}/unit
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" name="equipment_quantity" class="form-control equipment-qty" placeholder="Quantity" min="1" value="1">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger remove-equipment">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" id="addEquipment" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg"></i> Add Equipment
+            </button>
+        </div>
+    </div>
+    
+    <!-- Price Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-calculator"></i> Price Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td>Court Rental:</td>
+                            <td class="text-end" id="courtRentalFee">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>Equipment Rental:</td>
+                            <td class="text-end" id="equipmentRentalFee">Rp 0</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>Total:</strong></td>
+                            <td class="text-end"><strong id="totalAmount">Rp 0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Down Payment (50%):</td>
+                            <td class="text-end text-primary" id="downPayment">Rp 0</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'booking_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Cancel
+        </a>
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg"></i> Create Booking
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let hourlyRate = 0;
+    
+    // Customer search
+    const customerSearch = document.getElementById('customerSearch');
+    const customerResults = document.getElementById('customerResults');
+    const existingCustomerId = document.getElementById('existingCustomerId');
+    
+    customerSearch.addEventListener('input', function() {
+        const query = this.value;
+        if (query.length < 2) {
+            customerResults.style.display = 'none';
+            return;
+        }
+        
+        fetch(`/api/search-customer/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                customerResults.innerHTML = '';
+                if (data.customers.length > 0) {
+                    data.customers.forEach(customer => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.innerHTML = `<strong>${customer.name}</strong> - ${customer.phone}`;
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            existingCustomerId.value = customer.id;
+                            document.querySelector('[name="customer-name"]').value = customer.name;
+                            document.querySelector('[name="customer-phone"]').value = customer.phone;
+                            document.querySelector('[name="customer-email"]').value = customer.email || '';
+                            customerSearch.value = customer.name + ' - ' + customer.phone;
+                            customerResults.style.display = 'none';
+                        });
+                        customerResults.appendChild(item);
+                    });
+                    customerResults.style.display = 'block';
+                } else {
+                    customerResults.style.display = 'none';
+                }
+            });
+    });
+    
+    // Court selection - get price
+    const courtSelect = document.querySelector('[name="booking-court"]');
+    courtSelect.addEventListener('change', function() {
+        const courtId = this.value;
+        if (!courtId) {
+            hourlyRate = 0;
+            document.getElementById('courtPrice').textContent = '';
+            calculateTotal();
+            return;
+        }
+        
+        fetch(`/api/court-price/?court_id=${courtId}`)
+            .then(response => response.json())
+            .then(data => {
+                hourlyRate = data.hourly_rate;
+                document.getElementById('courtPrice').textContent = 
+                    `${data.court_type} - Rp ${hourlyRate.toLocaleString('id-ID')}/hour`;
+                calculateTotal();
+                checkAvailability();
+            });
+    });
+    
+    // Duration change
+    const durationInput = document.querySelector('[name="booking-duration_hours"]');
+    durationInput.addEventListener('change', function() {
+        calculateTotal();
+        updateEndTime();
+    });
+    
+    // Time change - update end time
+    const startTimeInput = document.querySelector('[name="booking-start_time"]');
+    startTimeInput.addEventListener('change', updateEndTime);
+    
+    function updateEndTime() {
+        const startTime = startTimeInput.value;
+        const duration = parseInt(durationInput.value) || 1;
+        
+        if (startTime) {
+            const [hours, minutes] = startTime.split(':').map(Number);
+            let endHours = hours + duration;
+            if (endHours > 23) endHours = 23;
+            
+            const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            document.querySelector('[name="booking-end_time"]').value = endTime;
+            checkAvailability();
+        }
+    }
+    
+    // Check availability
+    function checkAvailability() {
+        const courtId = courtSelect.value;
+        const date = document.querySelector('[name="booking-booking_date"]').value;
+        const startTime = document.querySelector('[name="booking-start_time"]').value;
+        const endTime = document.querySelector('[name="booking-end_time"]').value;
+        
+        if (!courtId || !date || !startTime || !endTime) return;
+        
+        fetch(`/api/check-availability/?court_id=${courtId}&date=${date}&start_time=${startTime}&end_time=${endTime}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusDiv = document.getElementById('availabilityStatus');
+                statusDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+                
+                if (data.available) {
+                    statusDiv.classList.add('alert-success');
+                    statusDiv.innerHTML = '<i class="bi bi-check-circle"></i> ' + data.message;
+                } else {
+                    statusDiv.classList.add('alert-danger');
+                    statusDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + data.message;
+                }
+            });
+    }
+    
+    // Date change
+    document.querySelector('[name="booking-booking_date"]').addEventListener('change', checkAvailability);
+    document.querySelector('[name="booking-end_time"]').addEventListener('change', checkAvailability);
+    
+    // Equipment handling
+    document.getElementById('addEquipment').addEventListener('click', function() {
+        const container = document.getElementById('equipmentContainer');
+        const newRow = container.querySelector('.equipment-row').cloneNode(true);
+        newRow.querySelector('.equipment-select').value = '';
+        newRow.querySelector('.equipment-qty').value = '1';
+        container.appendChild(newRow);
+        attachEquipmentHandlers();
+    });
+    
+    function attachEquipmentHandlers() {
+        document.querySelectorAll('.remove-equipment').forEach(btn => {
+            btn.onclick = function() {
+                const rows = document.querySelectorAll('.equipment-row');
+                if (rows.length > 1) {
+                    this.closest('.equipment-row').remove();
+                    calculateTotal();
+                }
+            };
+        });
+        
+        document.querySelectorAll('.equipment-select, .equipment-qty').forEach(el => {
+            el.onchange = calculateTotal;
+        });
+    }
+    
+    attachEquipmentHandlers();
+    
+    // Calculate total
+    function calculateTotal() {
+        const duration = parseInt(durationInput.value) || 1;
+        const courtFee = hourlyRate * duration;
+        
+        let equipmentFee = 0;
+        document.querySelectorAll('.equipment-row').forEach(row => {
+            const select = row.querySelector('.equipment-select');
+            const qty = parseInt(row.querySelector('.equipment-qty').value) || 0;
+            const price = parseFloat(select.options[select.selectedIndex]?.dataset.price) || 0;
+            equipmentFee += price * qty;
+        });
+        
+        const total = courtFee + equipmentFee;
+        const downPayment = total * 0.5;
+        
+        document.getElementById('courtRentalFee').textContent = 'Rp ' + courtFee.toLocaleString('id-ID');
+        document.getElementById('equipmentRentalFee').textContent = 'Rp ' + equipmentFee.toLocaleString('id-ID');
+        document.getElementById('totalAmount').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('downPayment').textContent = 'Rp ' + downPayment.toLocaleString('id-ID');
+    }
+</script>
+{% endblock %}
