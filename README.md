@@ -144,18 +144,33 @@ MIS/
 
 ## 🖼️ Screenshots
 
-Screenshots of the application are available in the [`screenshots/`](screenshots/) folder:
 
-- Dashboard view
-- Booking management
-- Court schedule
-- Customer management
-- Payment processing
-- Equipment rental
-- Receipt generation
-- Reports and analytics
+Below are screenshots of the application interface:
 
-*Note: Add your screenshots to the `screenshots/` folder to document the application interface.*
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143055.png" alt="Dashboard view" width="600" />
+   <br><em>Dashboard view</em>
+</p>
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143111.png" alt="Booking management" width="600" />
+   <br><em>Booking management</em>
+</p>
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143128.png" alt="Court schedule" width="600" />
+   <br><em>Court schedule</em>
+</p>
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143143.png" alt="Customer management" width="600" />
+   <br><em>Customer management</em>
+</p>
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143156.png" alt="Payment processing" width="600" />
+   <br><em>Payment processing</em>
+</p>
+<p align="center">
+   <img src="screenshots/Screenshot%202026-02-12%20143208.png" alt="Equipment rental / Receipt / Reports" width="600" />
+   <br><em>Equipment rental / Receipt / Reports</em>
+</p>
 
 ## 🚀 Usage
 
